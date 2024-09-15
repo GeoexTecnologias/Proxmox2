@@ -35,7 +35,7 @@ install_portainer() {
 # Função para configurar o usuário admin do Portainer
 configure_portainer_admin() {
     echo "Configurando o usuário admin do Portainer..."
-    ADMIN_PASSWORD="@docker1234" # Defina a senha desejada aqui
+    ADMIN_PASSWORD="4hXv&&fQK@KODMlm" # Defina a senha desejada aqui
     until curl -k -s https://localhost:9443/api/status > /dev/null; do
         echo "Aguardando o Portainer iniciar para configurar o admin..."
         sleep 5
