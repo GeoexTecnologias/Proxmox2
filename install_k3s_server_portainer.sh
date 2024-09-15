@@ -14,56 +14,6 @@ install_docker() {
     echo "Docker instalado com sucesso."
 }
 
-# Função para instalar o Portainer
-install_portainer() {
-    echo "Instalando Portainer..."
-    docker volume create portainer_data
-    docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        -v portainer_data:/data portainer/portainer-ce:latest
-    echo "Portainer instalado com sucesso."
-
-    # Aguarda o Portainer estar pronto
-    echo "Aguardando o Portainer iniciar..."
-    sleep 15
-
-    # Configurar o usuário admin do Portainer
-    configure_portainer_admin
-    configure_portainer
-}
-
-# Função para configurar o usuário admin do Portainer
-configure_portainer_admin() {
-    echo "Configurando o usuário admin do Portainer..."
-    ADMIN_PASSWORD="4hXv&&fQK@KODMlm" # Defina a senha desejada aqui
-    until curl -k -s https://localhost:9443/api/status > /dev/null; do
-        echo "Aguardando o Portainer iniciar para configurar o admin..."
-        sleep 5
-    done
-
-    # Cria o usuário admin
-    curl -k -X POST "https://localhost:9443/api/users/admin/init" -H "Content-Type: application/json" \
-        --data "{\"Username\":\"admin\",\"Password\":\"$ADMIN_PASSWORD\"}"
-    echo "Usuário admin configurado com sucesso."
-}
-
-# Função para configurar o Portainer para gerenciar o K3s local
-configure_portainer() {
-    echo "Configurando o Portainer para gerenciar o K3s localmente..."
-
-    # Espera um pouco para garantir que o admin esteja configurado
-    sleep 10
-
-    # Ler o arquivo de configuração do K3s e ajustar o servidor conforme necessário
-    KUBECONFIG_CONTENT=$(sudo cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/<IP_DO_SERVIDOR>/g")
-
-    # Adiciona o ambiente Kubernetes no Portainer
-    ADMIN_PASSWORD="admin" # Mesma senha definida anteriormente
-    curl -k -X POST "https://localhost:9443/api/endpoints" -H "Content-Type: application/json" -H "X-Portainer-API-Key: $ADMIN_PASSWORD" \
-        --data "{\"Name\":\"Local K3s\",\"URL\":\"unix:///var/run/docker.sock\",\"GroupID\":1,\"PublicURL\":\"\",\"TLS\":false,\"TLSSkipVerify\":true,\"Type\":5,\"KubeConfigContent\":\"$KUBECONFIG_CONTENT\"}"
-    echo "Portainer configurado para gerenciar o K3s localmente."
-}
-
 # Função para instalar o K3s com etcd como datastore
 install_k3s_server() {
     echo "Instalando K3s server com etcd..."
@@ -72,11 +22,26 @@ install_k3s_server() {
     echo "Token para adicionar agents: $(cat /var/lib/rancher/k3s/server/node-token)"
 }
 
+# Função para instalar o Portainer no K3s
+install_portainer_on_k3s() {
+    echo "Instalando o Portainer no K3s..."
+
+    # Baixar o arquivo YAML do Portainer e aplicá-lo ao cluster K3s
+    kubectl apply -f https://downloads.portainer.io/ce2-17/portainer-ce.yaml
+
+    # Esperar até que o Portainer esteja implantado e pronto
+    echo "Aguardando o Portainer ficar pronto..."
+    kubectl wait --namespace portainer --for=condition=available --timeout=120s deployment/portainer
+
+    echo "Portainer instalado no K3s com sucesso."
+    echo "Acesse o Portainer em: http://<IP_DO_SERVIDOR>:30777"
+}
+
 # Função principal
 main() {
     install_docker
     install_k3s_server
-    install_portainer
+    install_portainer_on_k3s
 }
 
 # Executa o script principal
