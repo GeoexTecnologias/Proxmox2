@@ -32,6 +32,10 @@ install_helm() {
 # Função para instalar o Portainer no K3s usando Helm
 install_portainer_on_k3s() {
     echo "Instalando o Portainer no K3s usando Helm..."
+
+    # Definindo o KUBECONFIG para garantir que o Helm use o kubeconfig correto
+    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
     # Adiciona o repositório oficial do Portainer
     helm repo add portainer https://portainer.github.io/k8s/
 
@@ -42,13 +46,13 @@ install_portainer_on_k3s() {
     kubectl create namespace portainer
 
     # Instala o Portainer na namespace "portainer"
-    helm install portainer portainer/portainer --namespace portainer --set service.type=NodePort --set service.nodePort=9443
+    helm install portainer portainer/portainer --namespace portainer --set service.type=NodePort --set service.nodePort=30777
 
     echo "Aguardando o Portainer ficar pronto..."
     kubectl wait --namespace portainer --for=condition=available --timeout=120s deployment/portainer
 
     echo "Portainer instalado no K3s com sucesso."
-    echo "Acesse o Portainer em: http://<IP_DO_SERVIDOR>:9443"
+    echo "Acesse o Portainer em: http://<IP_DO_SERVIDOR>:30777"
 }
 
 # Função principal
