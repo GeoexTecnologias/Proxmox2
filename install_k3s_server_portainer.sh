@@ -42,13 +42,13 @@ install_portainer_on_k3s() {
     kubectl create namespace portainer
 
     # Instala o Portainer na namespace "portainer"
-    helm install portainer portainer/portainer --namespace portainer --set service.type=NodePort --set service.nodePort=30777
+    helm install portainer portainer/portainer --namespace portainer --set service.type=NodePort --set service.nodePort=9443
 
     echo "Aguardando o Portainer ficar pronto..."
     kubectl wait --namespace portainer --for=condition=available --timeout=120s deployment/portainer
 
     echo "Portainer instalado no K3s com sucesso."
-    echo "Acesse o Portainer em: http://<IP_DO_SERVIDOR>:30777"
+    echo "Acesse o Portainer em: http://<IP_DO_SERVIDOR>:9443"
 }
 
 # Função principal
