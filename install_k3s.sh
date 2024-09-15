@@ -1,35 +1,35 @@
 #!/bin/bash
 
-# Função para renomear o node e configurar a rede
+# Função para configurar hostname e rede
 configure_network() {
-    NODE_NAME=$1
+    NEW_HOSTNAME=$1
     IP_ADDRESS=$2
     NETMASK=$3
     GATEWAY=$4
+    DNS=$5
 
-    echo "Configurando nome do node para $NODE_NAME..."
-    hostnamectl set-hostname $NODE_NAME
-    echo "127.0.0.1   $NODE_NAME" >> /etc/hosts
+    # Configura o hostname
+    echo "Configurando o hostname para $NEW_HOSTNAME..."
+    hostnamectl set-hostname $NEW_HOSTNAME
+    echo "127.0.0.1 $NEW_HOSTNAME" >> /etc/hosts
 
-    echo "Configurando rede com IP: $IP_ADDRESS, Máscara: $NETMASK, Gateway: $GATEWAY..."
-
-    # Criação do arquivo de configuração de rede para netplan
-    cat <<EOF >/etc/netplan/01-netcfg.yaml
+    # Configura a interface de rede
+    echo "Configurando rede com IP: $IP_ADDRESS, Máscara: $NETMASK, Gateway: $GATEWAY, DNS: $DNS..."
+    NETPLAN_CONFIG="/etc/netplan/01-netcfg.yaml"
+    cat <<EOF > $NETPLAN_CONFIG
 network:
   version: 2
   ethernets:
-    ens18:  # Altere para o nome da interface de rede, verifique com 'ip a'
-      dhcp4: no
+    ens18:  # Altere a interface se necessário (ex: ens192)
       addresses:
         - $IP_ADDRESS/$NETMASK
       gateway4: $GATEWAY
       nameservers:
         addresses:
-          - 8.8.8.8
-          - 8.8.4.4
+          - $DNS
 EOF
 
-    # Aplicando as configurações de rede
+    # Aplica as configurações de rede
     netplan apply
     echo "Configuração de rede aplicada com sucesso."
 }
@@ -82,20 +82,21 @@ install_k3s() {
 
 # Função principal
 main() {
-    if [ "$#" -lt 5 ]; then
-        echo "Uso: $0 <primary|secondary> <NODE_NAME> <IP_ADDRESS> <NETMASK> <GATEWAY> [ETCD_ENDPOINT] [TOKEN]"
+    if [ "$#" -lt 6 ]; then
+        echo "Uso: $0 <primary|secondary> <NEW_HOSTNAME> <IP_ADDRESS> <NETMASK> <GATEWAY> <DNS> [ETCD_ENDPOINT] [TOKEN]"
         exit 1
     fi
 
     NODE_TYPE=$1
-    NODE_NAME=$2
+    NEW_HOSTNAME=$2
     IP_ADDRESS=$3
     NETMASK=$4
     GATEWAY=$5
-    ETCD_ENDPOINT=$6
-    TOKEN=$7
+    DNS=$6
+    ETCD_ENDPOINT=$7
+    TOKEN=$8
 
-    configure_network $NODE_NAME $IP_ADDRESS $NETMASK $GATEWAY
+    configure_network $NEW_HOSTNAME $IP_ADDRESS $NETMASK $GATEWAY $DNS
     install_docker
     install_k3s $NODE_TYPE $ETCD_ENDPOINT $TOKEN
     install_portainer
