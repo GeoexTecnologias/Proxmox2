@@ -22,14 +22,28 @@ install_k3s_server() {
     echo "Token para adicionar agents: $(cat /var/lib/rancher/k3s/server/node-token)"
 }
 
-# Função para instalar o Portainer no K3s
+# Função para instalar o Helm
+install_helm() {
+    echo "Instalando o Helm..."
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    echo "Helm instalado com sucesso."
+}
+
+# Função para instalar o Portainer no K3s usando Helm
 install_portainer_on_k3s() {
-    echo "Instalando o Portainer no K3s..."
+    echo "Instalando o Portainer no K3s usando Helm..."
+    # Adiciona o repositório oficial do Portainer
+    helm repo add portainer https://portainer.github.io/k8s/
 
-    # Baixar o arquivo YAML do Portainer e aplicá-lo ao cluster K3s
-    kubectl apply -f https://downloads.portainer.io/ce2-17/portainer-ce.yaml
+    # Atualiza os repositórios do Helm
+    helm repo update
 
-    # Esperar até que o Portainer esteja implantado e pronto
+    # Cria a namespace para o Portainer
+    kubectl create namespace portainer
+
+    # Instala o Portainer na namespace "portainer"
+    helm install portainer portainer/portainer --namespace portainer --set service.type=NodePort --set service.nodePort=30777
+
     echo "Aguardando o Portainer ficar pronto..."
     kubectl wait --namespace portainer --for=condition=available --timeout=120s deployment/portainer
 
@@ -41,6 +55,7 @@ install_portainer_on_k3s() {
 main() {
     install_docker
     install_k3s_server
+    install_helm
     install_portainer_on_k3s
 }
 
