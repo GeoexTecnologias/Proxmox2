@@ -33,11 +33,11 @@ configure_portainer() {
 
     # Configurando o Portainer para gerenciar o K3s local
     PORTAINER_ADMIN_PASSWORD="admin" # Mude a senha conforme necessário
-    curl -X POST "http://localhost:9000/api/users/admin/init" -H "Content-Type: application/json" \
+    curl -X POST "http://localhost:9443/api/users/admin/init" -H "Content-Type: application/json" \
         --data "{\"Username\":\"admin\",\"Password\":\"$PORTAINER_ADMIN_PASSWORD\"}"
 
     KUBECONFIG_CONTENT=$(cat /etc/rancher/k3s/k3s.yaml)
-    curl -X POST "http://localhost:9000/api/endpoints" -H "Content-Type: application/json" -H "X-Portainer-API-Key: $PORTAINER_ADMIN_PASSWORD" \
+    curl -X POST "http://localhost:9443/api/endpoints" -H "Content-Type: application/json" -H "X-Portainer-API-Key: $PORTAINER_ADMIN_PASSWORD" \
         --data "{\"Name\":\"Local K3s\",\"URL\":\"unix:///var/run/docker.sock\",\"GroupID\":1,\"PublicURL\":\"\",\"TLS\":true,\"TLSSkipVerify\":true,\"Type\":5,\"KubeConfigContent\":\"$KUBECONFIG_CONTENT\"}"
     echo "Portainer configurado para gerenciar o K3s localmente."
 }
