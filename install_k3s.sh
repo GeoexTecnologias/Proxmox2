@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Função para exibir o uso correto do script
+usage() {
+    echo "Uso: $0 --mode <primary|secondary> [--primary-ip <IP_DO_PRINCIPAL>] [--token <TOKEN>]"
+    echo ""
+    echo "Parâmetros:"
+    echo "  --mode          Define se o nó é o 'primary' (principal) ou 'secondary' (adicional)."
+    echo "  --primary-ip    IP do nó principal (necessário para adicionar um nó secundário)."
+    echo "  --token         Token do K3s para adicionar ao cluster (necessário para adicionar um nó secundário)."
+    echo ""
+    echo "Exemplos:"
+    echo "  $0 --mode primary"
+    echo "  $0 --mode secondary --primary-ip 192.168.1.10 --token <TOKEN>"
+    exit 1
+}
+
 # Função para instalar o Docker
 install_docker() {
     echo "Instalando Docker..."
@@ -16,12 +31,12 @@ install_docker() {
 
 # Função para instalar o K3s server
 install_k3s_server() {
-    if [ "$IS_PRIMARY" = "true" ]; then
+    if [ "$MODE" = "primary" ]; then
         echo "Instalando K3s server com etcd como nó principal..."
         curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --cluster-init --datastore-endpoint='etcd'" sh -
     else
         echo "Instalando K3s server e adicionando ao cluster existente..."
-        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --server https://$PRIMARY_SERVER:6443 --token $TOKEN" sh -
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --server https://$PRIMARY_IP:6443 --token $TOKEN" sh -
     fi
     echo "K3s server instalado com sucesso."
 }
@@ -35,7 +50,7 @@ install_helm() {
 
 # Função para instalar o Portainer no K3s usando Helm (somente no nó principal)
 install_portainer_on_k3s() {
-    if [ "$IS_PRIMARY" = "true" ]; then
+    if [ "$MODE" = "primary" ]; then
         echo "Instalando o Portainer no K3s usando Helm..."
         
         # Definindo o KUBECONFIG para garantir que o Helm use o kubeconfig correto
@@ -59,19 +74,30 @@ install_portainer_on_k3s() {
     fi
 }
 
+# Processa os parâmetros da linha de comando
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --mode) MODE="$2"; shift ;;
+        --primary-ip) PRIMARY_IP="$2"; shift ;;
+        --token) TOKEN="$2"; shift ;;
+        *) echo "Parâmetro desconhecido: $1"; usage ;;
+    esac
+    shift
+done
+
+# Valida os parâmetros obrigatórios
+if [ -z "$MODE" ]; then
+    echo "Erro: O modo (--mode) é obrigatório."
+    usage
+fi
+
+if [ "$MODE" = "secondary" ] && ( [ -z "$PRIMARY_IP" ] || [ -z "$TOKEN" ] ); then
+    echo "Erro: Para adicionar um nó secundário, você deve fornecer --primary-ip e --token."
+    usage
+fi
+
 # Função principal para coordenar as instalações
 main() {
-    # Solicita ao usuário se este é o nó principal ou um nó adicional
-    read -p "Este é o nó principal? (yes/no): " RESPONSE
-    if [[ "$RESPONSE" == "yes" ]]; then
-        IS_PRIMARY=true
-    else
-        IS_PRIMARY=false
-        # Se for um nó adicional, solicitar o IP do servidor principal e o token
-        read -p "Informe o IP do servidor principal: " PRIMARY_SERVER
-        read -p "Informe o token do K3s: " TOKEN
-    fi
-
     # Instalar Docker, K3s e Helm
     install_docker
     install_k3s_server
