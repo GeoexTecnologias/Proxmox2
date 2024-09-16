@@ -14,6 +14,8 @@ fi
 IP_DO_CONTROLADOR=$1
 TOKEN=$2
 
+echo "$IP_DO_CONTROLADOR / $TOKEN"
+
 echo "Iniciando a instalação do K3s agent no nó..."
 
 # Atualiza o sistema
