@@ -31,4 +31,9 @@ docker run -d -p 8000:8000 -p 9443:9443 --name=portainer \
 
 echo "Instalação concluída!"
 echo "K3s server com etcd e Portainer instalados."
+
+# Exibe o token gerado para conectar os nós ao controlador
+echo "Token para conectar os nós ao controlador:"
+sudo cat /var/lib/rancher/k3s/server/node-token
+
 echo "Conecte-se ao Portainer em https://$(hostname -I | awk '{print $1}'):9443"
