@@ -1,47 +1,28 @@
 #!/bin/bash
 
-# Função para instalar o Docker
-install_docker() {
-    echo "Instalando Docker..."
-    apt update
-    apt install -y apt-transport-https ca-certificates curl software-properties-common
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt update
-    apt install -y docker-ce docker-ce-cli containerd.io
-    systemctl start docker
-    systemctl enable docker
-    echo "Docker instalado com sucesso."
-}
+# Atualiza o timezone
+echo "Atualizando o timezone para America/Bahia"
+sudo timedatectl set-timezone America/Bahia
 
-# Função para instalar o K3s agent e conectar ao servidor principal
-install_k3s_agent() {
-    SERVER_URL=$1
-    TOKEN=$2
+# Verifica se os parâmetros foram passados
+if [ $# -ne 2 ]; then
+  echo "Uso: $0 <IP_DO_CONTROLADOR> <TOKEN>"
+  exit 1
+fi
 
-    if [ -z "$SERVER_URL" ] || [ -z "$TOKEN" ]; then
-        echo "Para adicionar um agent, forneça o URL do servidor K3s e o token."
-        exit 1
-    fi
+# Atribui os parâmetros às variáveis
+IP_DO_CONTROLADOR=$1
+TOKEN=$2
 
-    echo "Instalando K3s agent..."
-    curl -sfL https://get.k3s.io | K3S_URL="https://$SERVER_URL:6443" K3S_TOKEN="$TOKEN" sh -
-    echo "K3s agent instalado e conectado ao servidor."
-}
+echo "Iniciando a instalação do K3s agent no nó..."
 
-# Função principal
-main() {
-    if [ "$#" -ne 2 ]; then
-        echo "Uso: $0 <IP_DO_SERVIDOR> <TOKEN>"
-        exit 1
-    fi
+# Atualiza o sistema
+sudo apt update && sudo apt upgrade -y
 
-    SERVER_URL=$1
-    TOKEN=$2
+echo "Instalando o K3s agent e conectando ao controlador..."
+# Instala o K3s agent e conecta ao controlador usando os parâmetros fornecidos
+K3S_URL=https://$IP_DO_CONTROLADOR:6443 K3S_TOKEN=$TOKEN curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent" sh -
 
-    install_docker
-    install_k3s_agent $SERVER_URL $TOKEN
-}
-
-# Executa o script principal
-main "$@"
+echo "Instalação concluída!"
+echo "K3s agent instalado neste nó."
+echo "Este nó agora está conectado ao controlador em https://$IP_DO_CONTROLADOR:6443"
