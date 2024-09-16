@@ -37,9 +37,11 @@ kubectl create namespace portainer
 # Instala o Portainer via Helm com tolerância para rodar no nó controlador, sem expor serviços desnecessários
 echo "Instalando o Portainer no K3s via Helm..."
 helm install portainer portainer/portainer -n portainer \
+  --set service.type=NodePort \
   --set service.ports.http.enabled=false \
   --set service.ports.https.enabled=true \
-  --set service.ports.https.port=9443
+  --set service.ports.https.port=9443 \
+  --set service.ports.https.nodePort=9443
 
 echo "Instalação concluída!"
 echo "K3s server com etcd e Portainer instalados no controlador k3s."
