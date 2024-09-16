@@ -4,8 +4,6 @@
 echo "Atualizando o timezone para America/Bahia"
 sudo timedatectl set-timezone America/Bahia
 
-#!/bin/bash
-
 echo "Iniciando a instalação do K3s com etcd no servidor controlador..."
 
 # Atualiza o sistema
@@ -43,14 +41,8 @@ kubectl create namespace portainer
 # Remove qualquer instalação anterior do Portainer para garantir uma nova aplicação das configurações
 helm uninstall portainer -n portainer
 
-# Cria o arquivo values.yaml com a configuração de toleration e NodePort do serviço
+# Cria o arquivo values.yaml com a configuração de NodePort do serviço
 cat <<EOF > values.yaml
-tolerations:
-  - key: "dedicated"
-    operator: "Equal"
-    value: "controller"
-    effect: "NoSchedule"
-
 service:
   type: NodePort
   ports:
@@ -59,12 +51,16 @@ service:
     https:
       enabled: true
       port: 9443
-      nodePort: 9443  # Porta externa onde o Portainer será acessível
+      nodePort: 9443  # Porta externa definida como 9443 para coincidir com a porta interna
 EOF
 
 # Instala o Portainer via Helm usando o arquivo values.yaml personalizado
 echo "Instalando o Portainer no K3s via Helm com o arquivo values.yaml..."
 helm install portainer portainer/portainer -n portainer -f values.yaml
+
+# Adiciona a toleration manualmente ao deployment do Portainer
+echo "Adicionando a toleration ao deployment do Portainer..."
+kubectl patch deployment portainer -n portainer --type='json' -p='[{"op": "add", "path": "/spec/template/spec/tolerations", "value": [{"key":"dedicated","operator":"Equal","value":"controller","effect":"NoSchedule"}]}]'
 
 echo "Instalação concluída!"
 echo "K3s server com etcd e Portainer instalados no controlador k3s."
