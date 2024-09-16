@@ -4,6 +4,8 @@
 echo "Atualizando o timezone para America/Bahia"
 sudo timedatectl set-timezone America/Bahia
 
+#!/bin/bash
+
 echo "Iniciando a instalação do K3s com etcd no servidor controlador..."
 
 # Atualiza o sistema
@@ -38,16 +40,31 @@ helm repo update
 echo "Criando o namespace para o Portainer..."
 kubectl create namespace portainer
 
-# Instala o Portainer via Helm com tolerância para rodar no nó controlador, sem expor serviços desnecessários
-echo "Instalando o Portainer no K3s via Helm..."
-helm install portainer portainer/portainer -n portainer \
-  --set tolerations[0].key="dedicated" \
-  --set tolerations[0].operator="Equal" \
-  --set tolerations[0].value="controller" \
-  --set tolerations[0].effect="NoSchedule" \
-  --set service.ports.http.enabled=false \
-  --set service.ports.https.enabled=true \
-  --set service.ports.https.port=9443
+# Remove qualquer instalação anterior do Portainer para garantir uma nova aplicação das configurações
+helm uninstall portainer -n portainer
+
+# Cria o arquivo values.yaml com a configuração de toleration e NodePort do serviço
+cat <<EOF > values.yaml
+tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "controller"
+    effect: "NoSchedule"
+
+service:
+  type: NodePort
+  ports:
+    http:
+      enabled: false
+    https:
+      enabled: true
+      port: 9443
+      nodePort: 9443  # Porta externa onde o Portainer será acessível
+EOF
+
+# Instala o Portainer via Helm usando o arquivo values.yaml personalizado
+echo "Instalando o Portainer no K3s via Helm com o arquivo values.yaml..."
+helm install portainer portainer/portainer -n portainer -f values.yaml
 
 echo "Instalação concluída!"
 echo "K3s server com etcd e Portainer instalados no controlador k3s."
