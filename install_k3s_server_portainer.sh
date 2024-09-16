@@ -39,7 +39,7 @@ echo "Criando o namespace para o Portainer..."
 kubectl create namespace portainer
 
 # Remove qualquer instalação anterior do Portainer para garantir uma nova aplicação das configurações
-helm uninstall portainer -n portainer
+#helm uninstall portainer -n portainer
 
 # Cria o arquivo values.yaml com a configuração de NodePort do serviço
 cat <<EOF > values.yaml
