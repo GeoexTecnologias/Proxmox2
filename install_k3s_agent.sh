@@ -28,7 +28,7 @@ fi
 
 echo "Conectividade OK. Instalando o K3s agent e conectando ao controlador..."
 # Instala o K3s agent e conecta ao controlador usando os parâmetros fornecidos
-K3S_URL=https://$IP_DO_CONTROLADOR:6443 K3S_TOKEN=$TOKEN curl -sfL https://get.k3s.io | sh -s - agent --token $TOKEN
+curl -sfL https://get.k3s.io | K3S_URL="https://$IP_DO_CONTROLADOR:6443" K3S_TOKEN="$TOKEN"
 
 echo "Instalação concluída!"
 echo "K3s agent instalado neste nó."
