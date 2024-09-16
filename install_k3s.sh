@@ -33,14 +33,15 @@ install_docker() {
 install_k3s_server() {
     if [ "$MODE" = "primary" ]; then
         echo "Instalando K3s server com etcd como nó principal..."
+        sleep 10
         curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --cluster-init --datastore-endpoint='etcd'" sh -
         echo "K3s server instalado com sucesso."
-        # Exibe o token gerado para adicionar nós secundários ao cluster
         TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
         echo "Token para adicionar nós secundários: $TOKEN"
     else
         echo "Instalando K3s server e adicionando ao cluster existente..."
-        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --server https://$PRIMARY_IP:6443 --token $TOKEN" sh -
+        # Certifique-se de usar o parâmetro correto para adicionar o nó ao cluster existente
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --server https://$PRIMARY_IP:6443 --token $TOKEN --disable-etcd" sh -
         echo "K3s server instalado com sucesso."
     fi
 }
