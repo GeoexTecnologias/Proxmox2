@@ -19,7 +19,7 @@ echo "Instalando K3s agent e conectando ao servidor $IP_SERVIDOR..."
 curl -sfL https://get.k3s.io | K3S_URL=https://$IP_SERVIDOR:6443 K3S_TOKEN=$TOKEN_SERVIDOR sh -
 
 echo "Verificando o status do K3s agent..."
-systemctl status k3s-agent
+rc-service k3s-agent status
 
 echo "Configurando K3s agent para iniciar automaticamente..."
 rc-update add k3s-agent default
