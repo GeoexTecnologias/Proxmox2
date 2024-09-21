@@ -20,3 +20,6 @@ echo "Instalando Portainer Agent no K3s..."
 kubectl apply -f https://downloads.portainer.io/ce2-21/portainer-agent-k8s-nodeport.yaml
 
 echo "Portainer Agent instalado. O agente agora está rodando no servidor."
+
+echo "Token"
+cat /var/lib/rancher/k3s/server/node-token
