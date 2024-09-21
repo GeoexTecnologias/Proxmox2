@@ -15,18 +15,8 @@ rc-service k3s status
 echo "Instalando Helm..."
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-echo "Instalando Portainer Agent via Helm no K3s..."
+echo "Instalando Portainer Agent no K3s..."
 
-# Adicionar o repositório do Portainer
-helm repo add portainer https://portainer.github.io/k8s/
-
-# Atualizar os repositórios
-helm repo update
-
-# Instalar o Portainer Agent no namespace portainer-agent
-helm install portainer-agent portainer/portainer-agent \
-  --create-namespace \
-  --namespace portainer-agent \
-  --set agent.enabled=true
+kubectl apply -f https://downloads.portainer.io/ce2-21/portainer-agent-k8s-nodeport.yaml
 
 echo "Portainer Agent instalado. O agente agora está rodando no servidor."
