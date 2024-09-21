@@ -3,31 +3,30 @@
 echo "Atualizando o sistema..."
 apk update && apk upgrade
 
-echo "Instalando dependências..."
+echo "Instalando dependências necessárias..."
 apk add curl iptables ip6tables socat
 
 echo "Instalando K3s com etcd como datastore..."
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --cluster-init --datastore-endpoint=etcd" sh -
 
-echo "Verificando o status do K3s..."
-systemctl status k3s
+echo "Verificando o status do K3s (comando 'rc-service')..."
+rc-service k3s status
 
-echo "Configurando K3s para iniciar automaticamente..."
-rc-update add k3s default
+echo "Instalando Helm..."
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-echo "Instalando Docker para o Portainer agent..."
-apk add docker
-service docker start
-rc-update add docker
+echo "Instalando Portainer Agent via Helm no K3s..."
 
-echo "Instalando Portainer agent..."
-docker volume create portainer_data
-docker run -d \
-    -p 9001:9001 \
-    --name portainer_agent \
-    --restart=always \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -v portainer_data:/data \
-    portainer/agent
+# Adicionar o repositório do Portainer
+helm repo add portainer https://portainer.github.io/k8s/
 
-echo "Instalação concluída no servidor."
+# Atualizar os repositórios
+helm repo update
+
+# Instalar o Portainer Agent no namespace portainer-agent
+helm install portainer-agent portainer/portainer-agent \
+  --create-namespace \
+  --namespace portainer-agent \
+  --set agent.enabled=true
+
+echo "Portainer Agent instalado. O agente agora está rodando no servidor."
