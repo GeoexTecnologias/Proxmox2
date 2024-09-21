@@ -1,35 +1,27 @@
 #!/bin/bash
 
-# Atualiza o timezone
-echo "Atualizando o timezone para America/Bahia"
-sudo timedatectl set-timezone America/Bahia
+# Definir os parâmetros
+IP_SERVIDOR=$1
+TOKEN_SERVIDOR=$2
 
-# Verifica se os parâmetros foram passados
-if [ $# -ne 2 ]; then
-  echo "Uso: $0 <IP_DO_CONTROLADOR> <TOKEN>"
+if [ -z "$IP_SERVIDOR" ] || [ -z "$TOKEN_SERVIDOR" ]; then
+  echo "Uso: $0 <IP_DO_SERVIDOR> <TOKEN_DO_SERVIDOR>"
   exit 1
 fi
 
-# Atribui os parâmetros às variáveis
-IP_DO_CONTROLADOR=$1
-TOKEN=$2
+echo "Atualizando o sistema..."
+apk update && apk upgrade
 
-echo "Iniciando a instalação do K3s agent no nó..."
+echo "Instalando dependências..."
+apk add curl iptables ip6tables socat
 
-# Atualiza o sistema
-sudo apt update && sudo apt upgrade -y
+echo "Instalando K3s agent e conectando ao servidor $IP_SERVIDOR..."
+curl -sfL https://get.k3s.io | K3S_URL=https://$IP_SERVIDOR:6443 K3S_TOKEN=$TOKEN_SERVIDOR sh -
 
-# Testa a conectividade com o controlador
-echo "Testando conectividade com o controlador..."
-if ! curl -k https://$IP_DO_CONTROLADOR:6443 > /dev/null 2>&1; then
-  echo "Erro: Não foi possível conectar ao controlador em https://$IP_DO_CONTROLADOR:6443"
-  exit 1
-fi
+echo "Verificando o status do K3s agent..."
+systemctl status k3s-agent
 
-echo "Conectividade OK. Instalando o K3s agent e conectando ao controlador..."
-# Instala o K3s agent e conecta ao controlador usando os parâmetros fornecidos
-curl -sfL https://get.k3s.io | sudo INSTALL_K3S_EXEC="agent --server https://$IP_DO_CONTROLADOR:6443 --token $TOKEN" sh -
+echo "Configurando K3s agent para iniciar automaticamente..."
+rc-update add k3s-agent default
 
-echo "Instalação concluída!"
-echo "K3s agent instalado neste nó."
-echo "Este nó agora está conectado ao controlador em https://$IP_DO_CONTROLADOR:6443"
+echo "Instalação concluída no nó."
